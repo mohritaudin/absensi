@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+
+body{
+  font-family:'Segoe UI',sans-serif;
+  margin:0;
+  background:#f4f6fb;
+}
+
+/* HEADER */
+
+.header{
+  background:white;
+  padding:0px;
+  text-align:center;
+}
+
+.header img{width:90px;}
+
+.event{
+  background:linear-gradient(135deg,#00BCD4,#7E57C2);
+  color:white;
+  padding:10px;
+  border-radius:0 0 25px 25px;
+  text-align:center;
+}
+
+/* BUTTON */
+
+.scan-btn{
+  background:linear-gradient(135deg,#00BCD4,#FFC107);
+  color:white;
+  border:none;
+  padding:18px;
+  font-size:20px;
+  border-radius:15px;
+  width:85%;
+  max-width:350px;
+  margin:20px auto;
+  display:block;
+  font-weight:bold;
+}
+
+/* COUNTER */
+
+.counter{
+  display:flex;
+  gap:15px;
+  padding:0 20px;
+}
+
+.counter-card{
+  flex:1;
+  background:white;
+  padding:15px;
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 5px 12px rgba(0,0,0,0.08);
+}
+
+/* SEARCH */
+
+.search{
+  width:85%;
+  margin:20px auto;
+  display:block;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #ddd;
+}
+
+/* CARD LIST */
+
+.card{
+  background:white;
+  margin:15px 20px;
+  padding:15px;
+  border-radius:15px;
+  box-shadow:0 5px 12px rgba(0,0,0,0.08);
+  border-left:6px solid #4CAF50;
+}
+
+.kode{
+  float:right;
+  background:#eee;
+  padding:5px 10px;
+  border-radius:10px;
+  font-size:12px;
+}
+
+.chip{
+  display:inline-block;
+  background:#fff3e0;
+  margin:6px;
+  padding:8px 12px;
+  border-radius:10px;
+}
+
+.section{
+  padding:0 20px;
+  font-weight:bold;
+  margin-top:25px;
+}
+
+/* MODAL SCANNER */
+
+#scannerModal{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:999;
+}
+
+.modal-content{
+  background:white;
+  padding:20px;
+  border-radius:20px;
+  text-align:center;
+}
+
+#reader{
+  width:300px;
+}
+
+.close-btn{
+  background:red;
+  color:white;
+  border:none;
+  padding:10px 15px;
+  border-radius:10px;
+  margin-top:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<img src="https://peduliasd.id/logoasd.png">
+</div>
+
+<div class="event">
+<h2>ABSENSI</h2>
+SEMINAR & EDUKASI AUTISME<br>
+📅 25 Maret 2026<br>
+📍 Gedung Serbaguna Yogyakarta
+</div>
+
+<button class="scan-btn" onclick="openScanner()">📷 SCAN QR</button>
+
+<input type="text" id="search" class="search" placeholder="🔍 Cari nama / kode">
+
+<div class="counter">
+<div class="counter-card">🟢 Hadir<br><h2 id="countHadir">0</h2></div>
+<div class="counter-card">🔴 Belum<br><h2 id="countBelum">0</h2></div>
+</div>
+
+<div id="hasil"></div>
+
+<div class="section">🟢 Sudah Hadir</div>
+<div id="listHadir"></div>
+
+<div class="section">🔴 Belum Hadir</div>
+<div id="listBelum" style="padding:0 20px;"></div>
+
+<!-- MODAL QR -->
+
+<div id="scannerModal">
+  <div class="modal-content">
+    <div id="reader"></div>
+    <button class="close-btn" onclick="closeScanner()">Tutup</button>
+  </div>
+</div>
+
+<audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+
+<script>
+
+const GAS_URL="https://script.google.com/macros/s/AKfycbxzFG0VVERknLtbasp3RXuAJ3nlutMBlu1a3prMp3CqhPGRHjF4MeIV6Y1muG1oQjo/exec";
+
+let semuaData=[];
+let html5QrCode;
+
+loadData();
+
+function loadData(){
+fetch(`${GAS_URL}?action=getAll`)
+.then(res=>res.json())
+.then(data=>{
+semuaData=data;
+renderData(data);
+});
+}
+
+function renderData(data){
+
+let hadir=data.filter(p=>p.statusHadir=="Hadir")
+.sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
+
+let belum=data.filter(p=>p.statusHadir!="Hadir");
+
+countHadir.innerText=hadir.length;
+countBelum.innerText=belum.length;
+
+listHadir.innerHTML=hadir.map(p=>`
+<div class="card">
+<span class="kode">${p.kode}</span>
+<b>${p.nama}</b><br>
+${p.statusPeserta}<br>
+🕒 ${new Date(p.waktu).toLocaleTimeString()}
+</div>`).join("");
+
+listBelum.innerHTML=belum.map(p=>`
+<span class="chip">${p.kode} - ${p.nama}</span>
+`).join("");
+}
+
+search.addEventListener("input",function(){
+let keyword=this.value.toLowerCase();
+renderData(semuaData.filter(p=>
+p.nama.toLowerCase().includes(keyword)||
+p.kode.toLowerCase().includes(keyword)
+));
+});
+
+/* SCANNER MODAL */
+
+function openScanner(){
+scannerModal.style.display="flex";
+
+html5QrCode=new Html5Qrcode("reader");
+
+html5QrCode.start(
+{facingMode:"environment"},
+{fps:10,qrbox:250},
+
+qr=>{
+beep.play();
+closeScanner();
+
+fetch(`${GAS_URL}?action=getByKode&kode=${qr}`)
+.then(res=>res.json())
+.then(data=>{
+
+if(!data){alert("Peserta tidak ditemukan");return;}
+
+hasil.innerHTML=`
+<div class="card" style="border-left:6px solid #2196F3">
+<h3>${data.nama}</h3>
+${data.statusPeserta}<br>
+${data.nohp}<br>
+${data.email}<br><br>
+
+${
+data.statusHadir!="Hadir"
+? `<button class="scan-btn" onclick="hadir(${data.row},'${data.nama}')">✅ Tandai Hadir</button>`
+: `<b>Sudah hadir</b>`
+}
+</div>`;
+});
+});
+}
+
+function closeScanner(){
+scannerModal.style.display="none";
+if(html5QrCode){
+html5QrCode.stop().then(()=>{html5QrCode.clear();});
+}
+}
+
+function hadir(row,nama){
+fetch(`${GAS_URL}?action=hadir&row=${row}`)
+.then(()=>{
+alert(nama+" hadir ✔");
+hasil.innerHTML="";
+loadData();
+});
+}
+
+</script>
+
+</body>
+</html>

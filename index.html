@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -8,287 +9,194 @@
 <style>
 
 body{
-  font-family:'Segoe UI',sans-serif;
-  margin:0;
-  background:#f4f6fb;
+font-family:Segoe UI;
+margin:0;
+background:#f4f6fb;
 }
 
 /* HEADER */
 
-.header{
-  background:white;
-  padding:0px;
-  text-align:center;
-}
-
-.header img{width:90px;}
-
-.event{
-  background:linear-gradient(135deg,#00BCD4,#7E57C2);
-  color:white;
-  padding:10px;
-  border-radius:0 0 25px 25px;
-  text-align:center;
+.header img{
+width:100%;
 }
 
 /* BUTTON */
 
-.scan-btn{
-  background:linear-gradient(135deg,#00BCD4,#FFC107);
-  color:white;
-  border:none;
-  padding:18px;
-  font-size:20px;
-  border-radius:15px;
-  width:85%;
-  max-width:350px;
-  margin:20px auto;
-  display:block;
-  font-weight:bold;
+.btn{
+background:#00BCD4;
+color:white;
+border:none;
+padding:15px;
+font-size:18px;
+border-radius:10px;
+margin:10px;
 }
-
-/* COUNTER */
-
-.counter{
-  display:flex;
-  gap:15px;
-  padding:0 20px;
-}
-
-.counter-card{
-  flex:1;
-  background:white;
-  padding:15px;
-  border-radius:15px;
-  text-align:center;
-  box-shadow:0 5px 12px rgba(0,0,0,0.08);
-}
-
-/* SEARCH */
 
 .search{
-  width:85%;
-  margin:20px auto;
-  display:block;
-  padding:14px;
-  border-radius:12px;
-  border:1px solid #ddd;
+width:90%;
+padding:15px;
+margin:15px;
+border-radius:10px;
+border:1px solid #ccc;
 }
 
-/* CARD LIST */
-
 .card{
-  background:white;
-  margin:15px 20px;
-  padding:15px;
-  border-radius:15px;
-  box-shadow:0 5px 12px rgba(0,0,0,0.08);
-  border-left:6px solid #4CAF50;
+background:white;
+margin:10px;
+padding:15px;
+border-radius:15px;
+box-shadow:0 4px 10px rgba(0,0,0,.1);
 }
 
 .kode{
-  float:right;
-  background:#eee;
-  padding:5px 10px;
-  border-radius:10px;
-  font-size:12px;
-}
-
-.chip{
-  display:inline-block;
-  background:#fff3e0;
-  margin:6px;
-  padding:8px 12px;
-  border-radius:10px;
-}
-
-.section{
-  padding:0 20px;
-  font-weight:bold;
-  margin-top:25px;
-}
-
-/* MODAL SCANNER */
-
-#scannerModal{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.7);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:999;
-}
-
-.modal-content{
-  background:white;
-  padding:20px;
-  border-radius:20px;
-  text-align:center;
-}
-
-#reader{
-  width:300px;
-}
-
-.close-btn{
-  background:red;
-  color:white;
-  border:none;
-  padding:10px 15px;
-  border-radius:10px;
-  margin-top:10px;
+float:right;
+background:#eee;
+padding:5px 10px;
+border-radius:10px;
+font-size:12px;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <div class="header">
-<img src="https://peduliasd.id/logoasd.png">
+<img src="https://lh7-rt.googleusercontent.com/formsz/AN7BsVD9lL-J-1X4z3DN3y7RQJ6F_eVnMJ4vvy5N_r4JogL1tzIe9dxFWVfR8ro2i8BOqdXSYeRFBypWle8kZAxdbv0wI2JCK5HaocJwm6d_QeP2Dy5eHZMWxmOqHrAVS_DrR1I6g3NsYecntOjAHu0Y0CFuCp6IHUq2jaUdIbkhXZg7Hd4kMiJJZ-dBYtyWLL7gZzfx-Jd5qpD_fOUR=w6043?key=FGRKs9d1nNVOkmX5QU_r4w">
 </div>
 
-<div class="event">
-<h2>ABSENSI</h2>
-Festival Peduli Autisme 2026<br>
-📅 Sabtu, 4 April 20206<br>
-📍 Mall Pesona Square, Kota Depok, Jawa Barat
-</div>
+<button class="btn" onclick="startScan()">SCAN QR</button>
 
-<button class="scan-btn" onclick="openScanner()">📷 SCAN QR</button>
+<input id="manual" class="search" placeholder="Input kode peserta manual">
+<button class="btn" onclick="manual()">ABSEN MANUAL</button>
 
-<input type="text" id="search" class="search" placeholder="🔍 Cari nama / kode">
+<div id="reader"></div>
 
-<div class="counter">
-<div class="counter-card">🟢 Hadir<br><h2 id="countHadir">0</h2></div>
-<div class="counter-card">🔴 Belum<br><h2 id="countBelum">0</h2></div>
-</div>
+<div id="stats"></div>
 
-<div id="hasil"></div>
-
-<div class="section">🟢 Sudah Hadir</div>
-<div id="listHadir"></div>
-
-<div class="section">🔴 Belum Hadir</div>
-<div id="listBelum" style="padding:0 20px;"></div>
-
-<!-- MODAL QR -->
-
-<div id="scannerModal">
-  <div class="modal-content">
-    <div id="reader"></div>
-    <button class="close-btn" onclick="closeScanner()">Tutup</button>
-  </div>
-</div>
-
-<audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<div id="list"></div>
 
 <script>
 
-const GAS_URL="https://script.google.com/macros/s/AKfycbx2RuH2Kua4DEoi-0DXD01l6USziMnMlbjULCJfxs4beuU4a6RJoYwWoNP4YkAMgSfBfQ/exec";
+const API="https://script.google.com/macros/s/AKfycbx2RuH2Kua4DEoi-0DXD01l6USziMnMlbjULCJfxs4beuU4a6RJoYwWoNP4YkAMgSfBfQ/exec";
 
-let semuaData=[];
-let html5QrCode;
+let pesertaCache={};
+let html5Qr;
 
-loadData();
+/* LOAD DATA */
 
-function loadData(){
-fetch(`${GAS_URL}?action=getAll`)
-.then(res=>res.json())
-.then(data=>{
-semuaData=data;
-renderData(data);
+async function loadData(){
+
+let res=await fetch(API+"?action=getAll");
+let data=await res.json();
+
+data.forEach(p=>{
+pesertaCache[p.kode]=p;
 });
+
+render();
+
 }
 
-function renderData(data){
+/* RENDER */
 
-let hadir=data.filter(p=>p.statusHadir=="Hadir")
-.sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
+function render(){
 
-let belum=data.filter(p=>p.statusHadir!="Hadir");
+let hadir=Object.values(pesertaCache).filter(p=>p.status=="Hadir");
+let belum=Object.values(pesertaCache).filter(p=>p.status!="Hadir");
 
-countHadir.innerText=hadir.length;
-countBelum.innerText=belum.length;
+stats.innerHTML=`
+<h3>Hadir : ${hadir.length} | Belum : ${belum.length}</h3>
+`;
 
-listHadir.innerHTML=hadir.map(p=>`
+list.innerHTML=hadir.map(p=>`
 <div class="card">
 <span class="kode">${p.kode}</span>
-<b>${p.nama}</b><br>
-${p.statusPeserta}<br>
-🕒 ${new Date(p.waktu).toLocaleTimeString()}
-</div>`).join("");
-
-listBelum.innerHTML=belum.map(p=>`
-<span class="chip">${p.kode} - ${p.nama}</span>
+<b>${p.nama}</b>
+</div>
 `).join("");
+
 }
 
-search.addEventListener("input",function(){
-let keyword=this.value.toLowerCase();
-renderData(semuaData.filter(p=>
-p.nama.toLowerCase().includes(keyword)||
-p.kode.toLowerCase().includes(keyword)
-));
+/* SCAN */
+
+function startScan(){
+
+html5Qr=new Html5Qrcode("reader");
+
+html5Qr.start(
+{ facingMode:"environment" },
+{ fps:10, qrbox:250 },
+onScan
+);
+
+}
+
+function onScan(kode){
+
+if(!pesertaCache[kode]){
+alert("Tidak ditemukan");
+return;
+}
+
+let p=pesertaCache[kode];
+
+if(p.status=="Hadir"){
+alert("Sudah hadir");
+return;
+}
+
+hadir(p.row,kode);
+
+}
+
+/* UPDATE HADIR */
+
+async function hadir(row,kode){
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"hadir",
+row:row
+})
 });
 
-/* SCANNER MODAL */
+pesertaCache[kode].status="Hadir";
 
-function openScanner(){
-scannerModal.style.display="flex";
+render();
 
-html5QrCode=new Html5Qrcode("reader");
-
-html5QrCode.start(
-{facingMode:"environment"},
-{fps:10,qrbox:250},
-
-qr=>{
-beep.play();
-closeScanner();
-
-fetch(`${GAS_URL}?action=getByKode&kode=${qr}`)
-.then(res=>res.json())
-.then(data=>{
-
-if(!data){alert("Peserta tidak ditemukan");return;}
-
-hasil.innerHTML=`
-<div class="card" style="border-left:6px solid #2196F3">
-<h3>${data.nama}</h3>
-${data.statusPeserta}<br>
-${data.nohp}<br>
-${data.email}<br><br>
-
-${
-data.statusHadir!="Hadir"
-? `<button class="scan-btn" onclick="hadir(${data.row},'${data.nama}')">✅ Tandai Hadir</button>`
-: `<b>Sudah hadir</b>`
 }
-</div>`;
+
+/* MANUAL ABSEN */
+
+async function manual(){
+
+let kode=document.getElementById("manual").value;
+
+if(!pesertaCache[kode]){
+alert("Kode tidak ditemukan");
+return;
+}
+
+let p=pesertaCache[kode];
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"manual",
+kode:kode
+})
 });
-});
+
+pesertaCache[kode].status="Hadir";
+
+render();
+
 }
 
-function closeScanner(){
-scannerModal.style.display="none";
-if(html5QrCode){
-html5QrCode.stop().then(()=>{html5QrCode.clear();});
-}
-}
-
-function hadir(row,nama){
-fetch(`${GAS_URL}?action=hadir&row=${row}`)
-.then(()=>{
-alert(nama+" hadir ✔");
-hasil.innerHTML="";
 loadData();
-});
-}
 
 </script>
 

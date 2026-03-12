@@ -9,12 +9,10 @@
 <style>
 
 body{
-font-family:Segoe UI;
+font-family:'Segoe UI',sans-serif;
 margin:0;
 background:#f4f6fb;
 }
-
-/* HEADER */
 
 .header img{
 width:100%;
@@ -22,30 +20,55 @@ width:100%;
 
 /* BUTTON */
 
-.btn{
-background:#00BCD4;
+.scan-btn{
+background:linear-gradient(135deg,#00BCD4,#FFC107);
 color:white;
 border:none;
-padding:15px;
+padding:18px;
 font-size:18px;
-border-radius:10px;
-margin:10px;
+border-radius:15px;
+width:85%;
+max-width:350px;
+margin:15px auto;
+display:block;
+font-weight:bold;
+}
+
+/* COUNTER */
+
+.counter{
+display:flex;
+gap:15px;
+padding:0 20px;
+}
+
+.counter-card{
+flex:1;
+background:white;
+padding:15px;
+border-radius:15px;
+text-align:center;
+box-shadow:0 5px 12px rgba(0,0,0,0.08);
 }
 
 .search{
-width:90%;
-padding:15px;
-margin:15px;
-border-radius:10px;
-border:1px solid #ccc;
+width:85%;
+margin:20px auto;
+display:block;
+padding:14px;
+border-radius:12px;
+border:1px solid #ddd;
 }
+
+/* CARD */
 
 .card{
 background:white;
-margin:10px;
+margin:15px 20px;
 padding:15px;
 border-radius:15px;
-box-shadow:0 4px 10px rgba(0,0,0,.1);
+box-shadow:0 5px 12px rgba(0,0,0,0.08);
+border-left:6px solid #2196F3;
 }
 
 .kode{
@@ -56,8 +79,77 @@ border-radius:10px;
 font-size:12px;
 }
 
-</style>
+.section{
+padding:0 20px;
+font-weight:bold;
+margin-top:25px;
+}
 
+/* TABLE */
+
+table{
+width:90%;
+margin:20px auto;
+border-collapse:collapse;
+background:white;
+border-radius:10px;
+overflow:hidden;
+box-shadow:0 5px 12px rgba(0,0,0,0.08);
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #eee;
+text-align:left;
+font-size:14px;
+}
+
+th{
+background:#00BCD4;
+color:white;
+}
+
+tr:hover{
+background:#f5f5f5;
+cursor:pointer;
+}
+
+/* MODAL */
+
+#scannerModal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:999;
+}
+
+.modal-content{
+background:white;
+padding:20px;
+border-radius:20px;
+text-align:center;
+}
+
+#reader{
+width:300px;
+}
+
+.close-btn{
+background:red;
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:10px;
+margin-top:10px;
+}
+
+</style>
 </head>
 
 <body>
@@ -66,137 +158,251 @@ font-size:12px;
 <img src="https://lh7-rt.googleusercontent.com/formsz/AN7BsVD9lL-J-1X4z3DN3y7RQJ6F_eVnMJ4vvy5N_r4JogL1tzIe9dxFWVfR8ro2i8BOqdXSYeRFBypWle8kZAxdbv0wI2JCK5HaocJwm6d_QeP2Dy5eHZMWxmOqHrAVS_DrR1I6g3NsYecntOjAHu0Y0CFuCp6IHUq2jaUdIbkhXZg7Hd4kMiJJZ-dBYtyWLL7gZzfx-Jd5qpD_fOUR=w6043?key=FGRKs9d1nNVOkmX5QU_r4w">
 </div>
 
-<button class="btn" onclick="startScan()">SCAN QR</button>
+<button class="scan-btn" onclick="openScanner()">📷 SCAN QR</button>
 
-<input id="manual" class="search" placeholder="Input kode peserta manual">
-<button class="btn" onclick="manual()">ABSEN MANUAL</button>
+<input type="text" id="manualInput" class="search" placeholder="Input kode peserta">
 
+<button class="scan-btn" onclick="manualAbsen()">Cek Peserta</button>
+
+<div class="counter">
+<div class="counter-card">🟢 Hadir<br><h2 id="countHadir">0</h2></div>
+<div class="counter-card">🔴 Belum<br><h2 id="countBelum">0</h2></div>
+</div>
+
+<div id="verifikasi"></div>
+
+<div class="section">🔎 Cari Peserta</div>
+
+<input type="text" id="searchInput" class="search" placeholder="Cari nama / kode / WA / kota">
+
+<div id="searchResult"></div>
+
+<!-- SCANNER -->
+
+<div id="scannerModal">
+<div class="modal-content">
 <div id="reader"></div>
+<button class="close-btn" onclick="closeScanner()">Tutup</button>
+</div>
+</div>
 
-<div id="stats"></div>
-
-<div id="list"></div>
+<audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbx2RuH2Kua4DEoi-0DXD01l6USziMnMlbjULCJfxs4beuU4a6RJoYwWoNP4YkAMgSfBfQ/exec";
+const API="https://script.google.com/macros/s/AKfycbydOuQtFGydt5bu_NNXCIA3T2D4_Jy-EEd7VzEyrHrX2sgJNJucYVMOA5R-qSmGzpvCRg/exec";
 
 let pesertaCache={};
-let html5Qr;
+let semuaData=[];
+let html5QrCode;
 
-/* LOAD DATA */
+loadData();
 
 async function loadData(){
 
 let res=await fetch(API+"?action=getAll");
 let data=await res.json();
 
+semuaData=data;
+pesertaCache={};
+
 data.forEach(p=>{
 pesertaCache[p.kode]=p;
 });
 
-render();
+renderCounter();
 
 }
 
-/* RENDER */
+/* COUNTER */
 
-function render(){
+function renderCounter(){
 
-let hadir=Object.values(pesertaCache).filter(p=>p.status=="Hadir");
-let belum=Object.values(pesertaCache).filter(p=>p.status!="Hadir");
+let hadir=semuaData.filter(p=>p.status==="Hadir").length;
+let belum=semuaData.filter(p=>p.status!=="Hadir").length;
 
-stats.innerHTML=`
-<h3>Hadir : ${hadir.length} | Belum : ${belum.length}</h3>
-`;
-
-list.innerHTML=hadir.map(p=>`
-<div class="card">
-<span class="kode">${p.kode}</span>
-<b>${p.nama}</b>
-</div>
-`).join("");
+countHadir.innerText=hadir;
+countBelum.innerText=belum;
 
 }
 
-/* SCAN */
+/* SCANNER */
 
-function startScan(){
+function openScanner(){
 
-html5Qr=new Html5Qrcode("reader");
+scannerModal.style.display="flex";
 
-html5Qr.start(
-{ facingMode:"environment" },
-{ fps:10, qrbox:250 },
+html5QrCode=new Html5Qrcode("reader");
+
+html5QrCode.start(
+{facingMode:"environment"},
+{fps:10,qrbox:250},
 onScan
 );
 
 }
 
+function closeScanner(){
+
+scannerModal.style.display="none";
+
+if(html5QrCode){
+html5QrCode.stop().then(()=>{html5QrCode.clear();});
+}
+
+}
+
 function onScan(kode){
 
-if(!pesertaCache[kode]){
-alert("Tidak ditemukan");
-return;
+beep.play();
+closeScanner();
+
+tampilkanPeserta(kode);
+
 }
 
-let p=pesertaCache[kode];
+/* TAMPILKAN DATA */
 
-if(p.status=="Hadir"){
-alert("Sudah hadir");
+function tampilkanPeserta(kode){
+
+let data=pesertaCache[kode];
+
+if(!data){
+
+verifikasi.innerHTML="<div class='card'>Peserta tidak ditemukan</div>";
 return;
+
 }
 
-hadir(p.row,kode);
+verifikasi.innerHTML=`
+
+<div class="card">
+
+<span class="kode">${data.kode}</span>
+
+<h3>${data.nama}</h3>
+
+Jenis Kelamin : ${data.jk}<br>
+Tahun Lahir : ${data.tahun}<br>
+Kategori : ${data.statusPeserta}<br>
+Kota : ${data.kota}<br>
+WA : ${data.wa}<br>
+Email : ${data.email}<br><br>
+
+${
+data.status==="Hadir"
+? `<b style="color:green">Peserta sudah hadir</b>`
+: `<button class="scan-btn" onclick="hadir(${data.row},'${data.kode}','${data.nama}')">✅ Tandai Hadir</button>`
+}
+
+</div>
+
+`;
 
 }
 
 /* UPDATE HADIR */
 
-async function hadir(row,kode){
+async function hadir(row,kode,nama){
 
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-action:"hadir",
-row:row
-})
-});
+await fetch(API+"?action=hadir&row="+row);
+
+alert(nama+" hadir ✔");
 
 pesertaCache[kode].status="Hadir";
 
-render();
+semuaData=semuaData.map(p=>{
+if(p.kode===kode) p.status="Hadir";
+return p;
+});
+
+renderCounter();
+
+verifikasi.innerHTML="";
 
 }
 
-/* MANUAL ABSEN */
+/* MANUAL */
 
-async function manual(){
+function manualAbsen(){
 
-let kode=document.getElementById("manual").value;
+let kode=document.getElementById("manualInput").value.trim();
 
-if(!pesertaCache[kode]){
-alert("Kode tidak ditemukan");
+tampilkanPeserta(kode);
+
+}
+
+/* SEARCH */
+
+searchInput.addEventListener("input",function(){
+
+let keyword=this.value.toLowerCase().trim();
+
+if(keyword.length < 2){
+searchResult.innerHTML="";
 return;
 }
 
-let p=pesertaCache[kode];
+let result = semuaData.filter(p => {
 
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-action:"manual",
-kode:kode
-})
+let nama  = String(p.nama || "").toLowerCase();
+let kode  = String(p.kode || "").toLowerCase();
+let kota  = String(p.kota || "").toLowerCase();
+let wa    = String(p.wa || "");
+let email = String(p.email || "").toLowerCase();
+
+return (
+nama.includes(keyword) ||
+kode.includes(keyword) ||
+kota.includes(keyword) ||
+wa.includes(keyword) ||
+email.includes(keyword)
+);
+
 });
 
-pesertaCache[kode].status="Hadir";
+renderSearch(result);
 
-render();
+});
+
+function renderSearch(data){
+
+if(data.length==0){
+
+searchResult.innerHTML="<p style='text-align:center'>Data tidak ditemukan</p>";
+return;
 
 }
 
-loadData();
+searchResult.innerHTML=`
+
+<table>
+
+<tr>
+<th>Kode</th>
+<th>Nama</th>
+<th>Kota</th>
+<th>Status</th>
+</tr>
+
+${data.map(p=>`
+
+<tr onclick="tampilkanPeserta('${p.kode}')">
+
+<td>${p.kode}</td>
+<td>${p.nama}</td>
+<td>${p.kota}</td>
+<td>${p.status}</td>
+
+</tr>
+
+`).join("")}
+
+</table>
+
+`;
+
+}
 
 </script>
 

@@ -3,7 +3,6 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
@@ -49,15 +48,32 @@ padding:15px;
 border-radius:15px;
 text-align:center;
 box-shadow:0 5px 12px rgba(0,0,0,0.08);
+cursor:pointer;
 }
 
-.search{
-width:85%;
+/* SEARCH */
+
+.search-wrapper{
+width:90%;
 margin:20px auto;
-display:block;
+display:flex;
+gap:10px;
+}
+
+.search-wrapper input{
+flex:1;
 padding:14px;
 border-radius:12px;
 border:1px solid #ddd;
+}
+
+.search-btn{
+padding:14px 18px;
+border:none;
+border-radius:12px;
+background:#00BCD4;
+color:white;
+cursor:pointer;
 }
 
 /* CARD */
@@ -79,20 +95,14 @@ border-radius:10px;
 font-size:12px;
 }
 
-.section{
-padding:0 20px;
-font-weight:bold;
-margin-top:25px;
-}
-
 /* TABLE */
 
 table{
-width:90%;
-margin:20px auto;
+width:80%;
+margin:25px auto;
 border-collapse:collapse;
 background:white;
-border-radius:10px;
+border-radius:12px;
 overflow:hidden;
 box-shadow:0 5px 12px rgba(0,0,0,0.08);
 }
@@ -155,30 +165,32 @@ margin-top:10px;
 <body>
 
 <div class="header">
-<img src="https://lh7-rt.googleusercontent.com/formsz/AN7BsVD9lL-J-1X4z3DN3y7RQJ6F_eVnMJ4vvy5N_r4JogL1tzIe9dxFWVfR8ro2i8BOqdXSYeRFBypWle8kZAxdbv0wI2JCK5HaocJwm6d_QeP2Dy5eHZMWxmOqHrAVS_DrR1I6g3NsYecntOjAHu0Y0CFuCp6IHUq2jaUdIbkhXZg7Hd4kMiJJZ-dBYtyWLL7gZzfx-Jd5qpD_fOUR=w6043?key=FGRKs9d1nNVOkmX5QU_r4w">
+<img src="https://lh7-rt.googleusercontent.com/formsz/AN7BsVDjRvq1nOIoDF5uiZG_25ikIjOqN2tDCWmeaM3PHKBCs8TM3Zi6E24xXhUdsWYE9cIIRpmed4kx_Vz5RRGfmcS1SiF8g0gQpd1JeUTkL8AmRKhW8Mv4BDFSAkjQQtmS1WhyV1ZnEx0HYssQwkHeN9tVVfZHOJemYbrEag=fcrop64=1,00000000ffffffff?key=FGRKs9d1nNVOkmX5QU_r4w">
 </div>
 
 <button class="scan-btn" onclick="openScanner()">📷 SCAN QR</button>
 
-<input type="text" id="manualInput" class="search" placeholder="Input kode peserta">
-
-<button class="scan-btn" onclick="manualAbsen()">Cek Peserta</button>
-
 <div class="counter">
-<div class="counter-card">🟢 Hadir<br><h2 id="countHadir">0</h2></div>
-<div class="counter-card">🔴 Belum<br><h2 id="countBelum">0</h2></div>
+<div class="counter-card" onclick="filterStatus('Hadir')">
+🟢 Hadir<br><h2 id="countHadir">0</h2>
+</div>
+
+<div class="counter-card" onclick="filterStatus('Belum')">
+🔴 Belum<br><h2 id="countBelum">0</h2>
+</div>
 </div>
 
 <div id="verifikasi"></div>
 
-<div class="section">🔎 Cari Peserta</div>
-
-<input type="text" id="searchInput" class="search" placeholder="Cari nama / kode / WA / kota">
+<!-- SEARCH -->
+<div class="search-wrapper">
+<input type="text" id="searchInput" placeholder="Cari peserta...">
+<button class="search-btn">🔍</button>
+</div>
 
 <div id="searchResult"></div>
 
 <!-- SCANNER -->
-
 <div id="scannerModal">
 <div class="modal-content">
 <div id="reader"></div>
@@ -212,24 +224,39 @@ pesertaCache[p.kode]=p;
 
 renderCounter();
 
+/* DEFAULT BELUM HADIR */
+filterStatus("Belum");
+
 }
 
 /* COUNTER */
 
 function renderCounter(){
-
 let hadir=semuaData.filter(p=>p.status==="Hadir").length;
 let belum=semuaData.filter(p=>p.status!=="Hadir").length;
 
 countHadir.innerText=hadir;
 countBelum.innerText=belum;
+}
 
+/* FILTER */
+
+function filterStatus(status){
+
+let data;
+
+if(status==="Hadir"){
+data = semuaData.filter(p=>p.status==="Hadir");
+}else{
+data = semuaData.filter(p=>p.status!=="Hadir");
+}
+
+renderSearch(data);
 }
 
 /* SCANNER */
 
 function openScanner(){
-
 scannerModal.style.display="flex";
 
 html5QrCode=new Html5Qrcode("reader");
@@ -239,55 +266,42 @@ html5QrCode.start(
 {fps:10,qrbox:250},
 onScan
 );
-
 }
 
 function closeScanner(){
-
 scannerModal.style.display="none";
 
 if(html5QrCode){
 html5QrCode.stop().then(()=>{html5QrCode.clear();});
 }
-
 }
 
 function onScan(kode){
-
 beep.play();
 closeScanner();
-
 tampilkanPeserta(kode);
-
 }
 
-/* TAMPILKAN DATA */
+/* DETAIL */
 
 function tampilkanPeserta(kode){
 
 let data=pesertaCache[kode];
 
 if(!data){
-
 verifikasi.innerHTML="<div class='card'>Peserta tidak ditemukan</div>";
 return;
-
 }
 
 verifikasi.innerHTML=`
-
 <div class="card">
 
 <span class="kode">${data.kode}</span>
 
 <h3>${data.nama}</h3>
 
-Jenis Kelamin : ${data.jk}<br>
-Tahun Lahir : ${data.tahun}<br>
-Kategori : ${data.statusPeserta}<br>
 Kota : ${data.kota}<br>
-WA : ${data.wa}<br>
-Email : ${data.email}<br><br>
+WA : ${data.wa}<br><br>
 
 ${
 data.status==="Hadir"
@@ -296,12 +310,10 @@ data.status==="Hadir"
 }
 
 </div>
-
 `;
-
 }
 
-/* UPDATE HADIR */
+/* UPDATE */
 
 async function hadir(row,kode,nama){
 
@@ -318,18 +330,10 @@ return p;
 
 renderCounter();
 
+/* REFRESH TABLE */
+filterStatus("Belum");
+
 verifikasi.innerHTML="";
-
-}
-
-/* MANUAL */
-
-function manualAbsen(){
-
-let kode=document.getElementById("manualInput").value.trim();
-
-tampilkanPeserta(kode);
-
 }
 
 /* SEARCH */
@@ -339,26 +343,17 @@ searchInput.addEventListener("input",function(){
 let keyword=this.value.toLowerCase().trim();
 
 if(keyword.length < 2){
-searchResult.innerHTML="";
+filterStatus("Belum");
 return;
 }
 
 let result = semuaData.filter(p => {
-
-let nama  = String(p.nama || "").toLowerCase();
-let kode  = String(p.kode || "").toLowerCase();
-let kota  = String(p.kota || "").toLowerCase();
-let wa    = String(p.wa || "");
-let email = String(p.email || "").toLowerCase();
-
 return (
-nama.includes(keyword) ||
-kode.includes(keyword) ||
-kota.includes(keyword) ||
-wa.includes(keyword) ||
-email.includes(keyword)
+String(p.nama||"").toLowerCase().includes(keyword) ||
+String(p.kode||"").toLowerCase().includes(keyword) ||
+String(p.kota||"").toLowerCase().includes(keyword) ||
+String(p.wa||"").includes(keyword)
 );
-
 });
 
 renderSearch(result);
@@ -368,16 +363,12 @@ renderSearch(result);
 function renderSearch(data){
 
 if(data.length==0){
-
 searchResult.innerHTML="<p style='text-align:center'>Data tidak ditemukan</p>";
 return;
-
 }
 
 searchResult.innerHTML=`
-
 <table>
-
 <tr>
 <th>Kode</th>
 <th>Nama</th>
@@ -386,22 +377,18 @@ searchResult.innerHTML=`
 </tr>
 
 ${data.map(p=>`
-
 <tr onclick="tampilkanPeserta('${p.kode}')">
-
 <td>${p.kode}</td>
 <td>${p.nama}</td>
 <td>${p.kota}</td>
-<td>${p.status}</td>
-
+<td style="color:${p.status==='Hadir'?'green':'red'}">
+${p.status}
+</td>
 </tr>
-
 `).join("")}
 
 </table>
-
 `;
-
 }
 
 </script>
